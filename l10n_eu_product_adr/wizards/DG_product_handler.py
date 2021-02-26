@@ -14,7 +14,6 @@ class DGProductCounter(models.TransientModel):
 
     @api.multi
     def prepare_DG_data(self):
-        self.ensure_one()
         """
         Result is lines for dangerous products
         :return: dict
@@ -37,6 +36,7 @@ class DGProductCounter(models.TransientModel):
             }
         }
         """
+        self.ensure_one()
         vals = {
             "dg_lines": [],
             "total_section": {},
