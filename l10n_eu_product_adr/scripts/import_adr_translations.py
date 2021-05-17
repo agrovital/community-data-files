@@ -27,8 +27,8 @@ env = self.env  # noqa
 skiprows = 3
 columns = {
     1: "nl_NL",
-    3: "de_DE",
-    4: "fr_FR",
+    2: "fr_FR",
+    4: "de_DE",
 }
 
 

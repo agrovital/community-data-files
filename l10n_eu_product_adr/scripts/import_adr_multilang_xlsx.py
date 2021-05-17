@@ -11,10 +11,11 @@ from collections import defaultdict
 from lxml import etree
 from openpyxl import load_workbook  # pylint: disable=W7936
 
-skiprows = 3
+skiprows = 1
 columns = {
     0: "un_number",
-    2: "name",
+    2: "name_nl",
+    3: "name",
     5: "class_id",
     6: "classification_code",
     8: "label_ids",
@@ -22,6 +23,7 @@ columns = {
     10: "limited_quantity",
     12: "packing_instruction_ids",
     20: "transport_category",
+    21: "tunnel_restriction_code",
 }
 index = {key: value for value, key in columns.items()}
 
@@ -234,7 +236,9 @@ def limited_quantity(record, value, row):
 
 @transformer
 def name(record, value, row):
-    value = value.strip().replace("\n", "")
+    value = row[index["name"]].strip().replace("\n", "")
+    if not value:  # missing english translation 0509
+        value = row[index["name_nl"]].strip().replace("\n", "")
     etree.SubElement(record, "field", attrib={"name": "name"}).text = value
 
 
@@ -268,8 +272,10 @@ def classification_code(record, value, row):
 
 
 def parse_transport_category(row):
-    value = row[index["transport_category"]]
-    if value is None:
+    value = str(row[index["transport_category"]] or "").strip()
+    category = None
+    tunnel_restriction_code = None
+    if not value:
         if "VERVOER VERBODEN" in str(row):
             # codes 0020, 0021
             category = "CARRIAGE_PROHIBITED"
@@ -277,19 +283,21 @@ def parse_transport_category(row):
         elif "NIET ONDERWORPEN AAN HET ADR" in str(row):
             category = "NOT_SUBJECT_TO_ADR"
             tunnel_restriction_code = "NOT_SUBJECT_TO_ADR"
-        elif str(row[0]) in ["2071", "3363"]:  # known exceptions
+        elif parse_un_number(row) in ["1043", "2071", "3363"]:  # known exceptions
             category = "-"
             tunnel_restriction_code = "-"
-    else:
-        match = re.search(r"(.*)\(([^\)]+)\)", value, re.DOTALL)
+    if category is None:
+        category = value
+    if not tunnel_restriction_code:
+        value2 = (row[index["tunnel_restriction_code"]] or "").strip()
+        match = re.match(r"\(([^\)]+)\)", value2, re.DOTALL)
         if not match:
             raise ValueError(
-                "Unknown value for transport code/tunnel restriction code: "
-                "%s" % value,
-                row,
+                "Unknown value for tunnel restriction code: " "%s (%s)" % (value2, row)
             )
-        category = match.groups()[0].strip()
-        tunnel_restriction_code = match.groups()[1].strip()
+        tunnel_restriction_code = match.groups()[0].strip()
+    if tunnel_restriction_code == "-" and not category:
+        category = "-"
     if "BP671" in category:
         # Special provision 671. Category depending on packing group
         # or else "2"

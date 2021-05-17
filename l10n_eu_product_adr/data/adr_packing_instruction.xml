@@ -321,6 +321,12 @@
 <record id="adr_packing_instruction_P903" model="adr.packing.instruction"><field
             name="code"
         >P903</field></record>
+<record id="adr_packing_instruction_P903a" model="adr.packing.instruction"><field
+            name="code"
+        >P903a</field></record>
+<record id="adr_packing_instruction_P903b" model="adr.packing.instruction"><field
+            name="code"
+        >P903b</field></record>
 <record id="adr_packing_instruction_P904" model="adr.packing.instruction"><field
             name="code"
         >P904</field></record>
